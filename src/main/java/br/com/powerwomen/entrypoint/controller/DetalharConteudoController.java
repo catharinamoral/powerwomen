@@ -3,19 +3,23 @@ package br.com.powerwomen.entrypoint.controller;
 import static br.com.powerwomen.entrypoint.constants.ParametrosEntryPointConstants.ID_MULHER;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.HttpClientErrorException;
 
+import br.com.powerwomen.commons.model.DataModelResponse;
 import br.com.powerwomen.entrypoint.constants.RecursoConstants;
+import br.com.powerwomen.entrypoint.mapper.DetalharConteudoEntryPointDomainMapper;
+import br.com.powerwomen.entrypoint.mapper.DetalharConteudoEntryPointModelMapper;
+import br.com.powerwomen.usecase.DetalharConteudoUseCase;
 import br.com.powerwomen.usecase.domain.request.DetalharConteudoDomainRequest;
-import br.com.powerwomen.usecase.domain.response.DetalharConteudoDomainResponse;
-import br.com.powerwomen.usecase.gateway.DetalharConteudoGateway;
 
 @RestController
 @RequestMapping(value = RecursoConstants.DETALHAR)
@@ -23,13 +27,16 @@ import br.com.powerwomen.usecase.gateway.DetalharConteudoGateway;
 public class DetalharConteudoController {
 
 	@Autowired
-	private DetalharConteudoGateway gateway;
+	private DetalharConteudoUseCase detalharConteudoUseCase;
 	
 	@GetMapping
-	public Optional<List<DetalharConteudoDomainResponse>> teste(@PathVariable(ID_MULHER) String idMulher) {
-		DetalharConteudoDomainRequest request = DetalharConteudoDomainRequest.builder().idMulher(idMulher).build();
+	public ResponseEntity<DataModelResponse<List<DetalharConteudoDTO>>> detalharConteudo(@PathVariable(ID_MULHER) String idMulher) {
+		DetalharConteudoDomainRequest detalharConteudoDomainRequest = DetalharConteudoEntryPointDomainMapper.fromDomain(idMulher);
 		
-		return gateway.listarConteudoGeralPorIdMulher(request);
+		return detalharConteudoUseCase.detalharConteudo(detalharConteudoDomainRequest)
+				.map(DetalharConteudoEntryPointModelMapper::toDetalharConteudoDTO)
+				.map(conteudos -> new ResponseEntity<>(conteudos, HttpStatus.OK))
+				.orElseThrow(() -> new HttpClientErrorException(HttpStatus.NOT_FOUND));
 	}
 	
 }
